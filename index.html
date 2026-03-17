@@ -8,6 +8,14 @@
 
 <h2>CNC分中程序生成器（进阶版）</h2>
 
+<!-- ✅ AI功能 -->
+<p>AI生成（输入一句话）：</p>
+<input id="prompt" placeholder="例如：2000轴分中，安全50">
+<button onclick="aiGenerate()">AI生成程序</button>
+
+<hr>
+
+<!-- ✅ 原来的功能 -->
 <p>选择轴：</p>
 <select id="axis">
   <option value="X">X轴</option>
@@ -32,6 +40,8 @@
 <pre id="output"></pre>
 
 <script>
+
+// ✅ 原来的生成函数
 function generate() {
   let axis = document.getElementById("axis").value;
   let L = Number(document.getElementById("length").value);
@@ -50,24 +60,68 @@ function generate() {
 "O9001 (AUTO CENTER)\n\n" +
 "#100 = " + move.toFixed(2) + "\n" +
 "#101 = " + F + "\n\n" +
-
 "(正方向测量)\n" +
 "G91 G31 " + axis + "#100 F#101\n" +
 "#110 = #" + (axis === "X" ? "5061" : "5062") + "\n\n" +
-
 "G0 " + axis + "-" + back + "\n\n" +
-
 "(反方向测量)\n" +
 "G91 G31 " + axis + "[-#100*2] F#101\n" +
 "#111 = #" + (axis === "X" ? "5061" : "5062") + "\n\n" +
-
 "#120 = [#110 + #111] / 2\n\n" +
-
 "G90 G0 " + axis + "#120\n\n" +
 "M30";
 
   document.getElementById("output").innerText = code;
 }
+
+
+// ✅ AI生成函数
+async function aiGenerate() {
+  let prompt = document.getElementById("prompt").value;
+
+  if (!prompt) {
+    alert("请输入需求！");
+    return;
+  }
+
+  try {
+    let res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "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"
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "你是CNC工程师，生成分中G代码，格式要规范"
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      })
+    });
+
+    let data = await res.json();
+
+    if (data.error) {
+      document.getElementById("output").innerText = "错误：" + data.error.message;
+      return;
+    }
+
+    let result = data.choices[0].message.content;
+
+    document.getElementById("output").innerText = result;
+
+  } catch (e) {
+    document.getElementById("output").innerText = "请求失败，请检查网络或API";
+  }
+}
+
 </script>
 
 </body>

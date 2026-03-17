@@ -85,7 +85,7 @@ async function aiGenerate() {
   }
 
   try {
-    let res = await fetch("https://api.openai.com/v1/chat/completions", {
+    let res = await fetch("/api/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

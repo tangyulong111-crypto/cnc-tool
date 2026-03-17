@@ -1,127 +1,65 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>CNC分中程序生成器（进阶版）</title>
+<meta charset="UTF-8">
+<title>AI生成测试</title>
 </head>
 <body>
 
-<h2>CNC分中程序生成器（进阶版）</h2>
-
-<!-- ✅ AI功能 -->
-<p>AI生成（输入一句话）：</p>
+<p>AI生成（输入一句话）：</p >
 <input id="prompt" placeholder="例如：2000轴分中，安全50">
 <button onclick="aiGenerate()">AI生成程序</button>
 
-<hr>
-
-<!-- ✅ 原来的功能 -->
-<p>选择轴：</p>
-<select id="axis">
-  <option value="X">X轴</option>
-  <option value="Y">Y轴</option>
-</select>
-
-<p>总长度（mm）：</p>
-<input id="length">
-
-<p>安全距离（mm）：</p>
-<input id="safe">
-
-<p>测量速度（F）：</p>
-<input id="feed">
-
-<p>回退距离（mm）：</p>
-<input id="back">
-
-<br><br>
-<button onclick="generate()">生成程序</button>
-
-<pre id="output"></pre>
+<div id="result" style="margin-top:20px; white-space: pre-wrap; border:1px solid #ccc; padding:10px;"></div>
 
 <script>
-
-// ✅ 原来的生成函数
-function generate() {
-  let axis = document.getElementById("axis").value;
-  let L = Number(document.getElementById("length").value);
-  let safe = Number(document.getElementById("safe").value);
-  let F = Number(document.getElementById("feed").value);
-  let back = Number(document.getElementById("back").value);
-
-  if (isNaN(L) || isNaN(safe) || isNaN(F) || isNaN(back)) {
-    alert("请输入完整数字！");
-    return;
-  }
-
-  let move = (L / 2) + safe;
-
-  let code =
-"O9001 (AUTO CENTER)\n\n" +
-"#100 = " + move.toFixed(2) + "\n" +
-"#101 = " + F + "\n\n" +
-"(正方向测量)\n" +
-"G91 G31 " + axis + "#100 F#101\n" +
-"#110 = #" + (axis === "X" ? "5061" : "5062") + "\n\n" +
-"G0 " + axis + "-" + back + "\n\n" +
-"(反方向测量)\n" +
-"G91 G31 " + axis + "[-#100*2] F#101\n" +
-"#111 = #" + (axis === "X" ? "5061" : "5062") + "\n\n" +
-"#120 = [#110 + #111] / 2\n\n" +
-"G90 G0 " + axis + "#120\n\n" +
-"M30";
-
-  document.getElementById("output").innerText = code;
-}
-
-
-// ✅ AI生成函数
 async function aiGenerate() {
-  let prompt = document.getElementById("prompt").value;
-
-  if (!prompt) {
-    alert("请输入需求！");
-    return;
-  }
-
-  try {
-    let res = await fetch("/api/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "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"
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "你是CNC工程师，生成分中G代码，格式要规范"
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ]
-      })
-    });
-
-    let data = await res.json();
-
-    if (data.error) {
-      document.getElementById("output").innerText = "错误：" + data.error.message;
-      return;
+    const prompt = document.getElementById("prompt").value.trim();
+    if (!prompt) {
+        alert("请输入内容！");
+        return;
     }
 
-    let result = data.choices[0].message.content;
+    document.getElementById("result").innerText = "正在生成，请稍等…";
 
-    document.getElementById("output").innerText = result;
+    try {
+        const response = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt })
+        });
 
-  } catch (e) {
-    document.getElementById("output").innerText = "请求失败，请检查网络或API";
-  }
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error("请求错误:", errText);
+            document.getElementById("result").innerText = "调用失败，请查看控制台！";
+            return;
+        }
+
+        const data = await response.json();
+        console.log("API返回数据:", data);
+
+        // 自动获取生成文本，兼容新版 OpenAI JSON
+        let outputText = "";
+        if (data.output_text) {
+            outputText = data.output_text;
+        } else if (data.output && data.output.length > 0) {
+            outputText = data.output.map(o =>
+                o.content.map(c => c.text).join("")
+            ).join("\n");
+        } else if (data.error) {
+            outputText = "API返回错误: " + data.error;
+        } else {
+            outputText = "无返回内容";
+        }
+
+        document.getElementById("result").innerText = outputText;
+
+    } catch (err) {
+        console.error("请求异常:", err);
+        document.getElementById("result").innerText = "调用异常，请查看控制台！";
+    }
 }
-
 </script>
 
 </body>

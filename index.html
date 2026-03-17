@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>CNC分中程序生成器（进阶版）</title>
+</head>
+<body>
+
+<h2>CNC分中程序生成器（进阶版）</h2>
+
+<p>选择轴：</p>
+<select id="axis">
+  <option value="X">X轴</option>
+  <option value="Y">Y轴</option>
+</select>
+
+<p>总长度（mm）：</p>
+<input id="length">
+
+<p>安全距离（mm）：</p>
+<input id="safe">
+
+<p>测量速度（F）：</p>
+<input id="feed">
+
+<p>回退距离（mm）：</p>
+<input id="back">
+
+<br><br>
+<button onclick="generate()">生成程序</button>
+
+<pre id="output"></pre>
+
+<script>
+function generate() {
+  let axis = document.getElementById("axis").value;
+  let L = Number(document.getElementById("length").value);
+  let safe = Number(document.getElementById("safe").value);
+  let F = Number(document.getElementById("feed").value);
+  let back = Number(document.getElementById("back").value);
+
+  if (isNaN(L) || isNaN(safe) || isNaN(F) || isNaN(back)) {
+    alert("请输入完整数字！");
+    return;
+  }
+
+  let move = (L / 2) + safe;
+
+  let code =
+"O9001 (AUTO CENTER)\n\n" +
+"#100 = " + move.toFixed(2) + "\n" +
+"#101 = " + F + "\n\n" +
+
+"(正方向测量)\n" +
+"G91 G31 " + axis + "#100 F#101\n" +
+"#110 = #" + (axis === "X" ? "5061" : "5062") + "\n\n" +
+
+"G0 " + axis + "-" + back + "\n\n" +
+
+"(反方向测量)\n" +
+"G91 G31 " + axis + "[-#100*2] F#101\n" +
+"#111 = #" + (axis === "X" ? "5061" : "5062") + "\n\n" +
+
+"#120 = [#110 + #111] / 2\n\n" +
+
+"G90 G0 " + axis + "#120\n\n" +
+"M30";
+
+  document.getElementById("output").innerText = code;
+}
+</script>
+
+</body>
+</html>

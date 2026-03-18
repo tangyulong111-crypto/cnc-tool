@@ -31,7 +31,7 @@ async function aiGenerate() {
         });
 
         let data = await res.json();
-
+console.log("返回数据:", data);
         // 👉 如果后端返回错误
         if (data.error) {
             alert("API返回错误: " + JSON.stringify(data));

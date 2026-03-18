@@ -95,3 +95,44 @@ console.log("返回数据:", data);
 
 </body>
 </html>
+<script>
+async function aiGenerate() {
+    const prompt = document.getElementById("prompt").value.trim();
+    if (!prompt) {
+        alert("请输入内容！");
+        return;
+    }
+
+    try {
+        let res = await fetch("/api/generate2", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ prompt })
+        });
+
+        let data = await res.json();
+        console.log("返回数据:", data);
+
+        let result = "";
+        let content = data.choices?.[0]?.message?.content;
+
+        if (typeof content === "string") {
+            result = content;
+        } else if (Array.isArray(content)) {
+            result = content.map(c => c.text).join("\n");
+        }
+
+        if (!result) {
+            alert("没有生成内容: " + JSON.stringify(data));
+            return;
+        }
+
+        document.getElementById("output").value = result;
+
+    } catch (err) {
+        alert("请求失败: " + err.message);
+    }
+}
+</script>

@@ -19,7 +19,39 @@ async function aiGenerate() {
         alert("请输入内容！");
         return;
     }
+    try {
+        let res = await fetch("/api/generate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                prompt: prompt
+            })
+        });
 
+        let data = await res.json();
+
+        // 👉 如果后端返回错误
+        if (data.error) {
+            alert("API返回错误: " + JSON.stringify(data));
+            return;
+        }
+
+        // 👉 解析AI返回内容
+        let result = data.choices?.[0]?.message?.content;
+
+        if (!result) {
+            alert("解析失败: " + JSON.stringify(data));
+            return;
+        }
+
+        document.getElementById("output").value = result;
+
+    } catch (err) {
+        alert("请求失败: " + err.message);
+    }
+}
     document.getElementById("result").innerText = "正在生成，请稍等…";
 
     try {
